@@ -1,0 +1,29 @@
+global:
+  listen_address: ":8085"
+
+receivers:
+
+- path: '/grafana'
+  snmptrap_configs:
+    - addr: "localhost:162"
+      community: "public"
+      options:
+        trap-oid: "1.3.6"
+        data-list:
+          - oid: "1.3.6.1"
+            value: "test {{ .tag }}"
+            type: s
+          - oid: "1.3.6.2"
+            value: "test2"
+            type: s
+    - addr: "localhost:163"
+      community: "public"
+      options:
+        trap-oid: "1.3.6"
+        data-list:
+          - oid: "1.3.6.1"
+            value: "test {{ .tag }}"
+            type: s
+          - oid: "1.3.6.2"
+            value: "test2"
+            type: s

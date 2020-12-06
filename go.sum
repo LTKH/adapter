@@ -1,0 +1,17 @@
+github.com/geoffgarside/ber v1.1.0 h1:qTmFG4jJbwiSzSXoNJeHcOprVzZ8Ulde2Rrrifu5U9w=
+github.com/geoffgarside/ber v1.1.0/go.mod h1:jVPKeCbj6MvQZhwLYsGwaGI52oUorHoHKNecGT85ZCc=
+github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+github.com/influxdata/kapacitor v1.5.7/go.mod h1:vv15yTwFBi1kUhCUrM/PGdfsbh5Y5F8BaCrdOg2S+d8=
+github.com/k-sone/snmpgo v1.0.1 h1:wOWoTy4ztlHT/YTjrkbg8Jtx6Zh4ikxw+Knzmk67A54=
+github.com/k-sone/snmpgo v3.2.0+incompatible h1:2NogYilKYSia0f+seO9P7aRa6MKG6RcnNc1L74L8WOw=
+github.com/k-sone/snmpgo v3.2.0+incompatible/go.mod h1:9MC6LeG1sGPgrwnmu/V/ncg9P2M5zS5IvE+c4KZj25g=
+github.com/ltkh/notifier v0.0.0-20201206090411-2b97ace1a9cb h1:soqS/zNXR7yh0nASl/3OJ5OAKKliR+tWe6HM77LPbjc=
+github.com/naoina/go-stringutil v0.1.0/go.mod h1:XJ2SJL9jCtBh+P9q5btrd/Ylo8XwT/h1USek5+NqSA0=
+github.com/naoina/toml v0.1.1/go.mod h1:NBIhNtsFMo3G2szEBne+bO4gS192HuIYRqfvOWb4i1E=
+github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
+github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
+gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
+gopkg.in/natefinch/lumberjack.v2 v2.0.0 h1:1Lc07Kr7qY4U2YPouBjpCLxpiyxIVoxqXgkXLknAOE8=
+gopkg.in/natefinch/lumberjack.v2 v2.0.0/go.mod h1:l0ndWWf7gzL7RNwBG7wST/UCcT4T24xpD6X8LsfU/+k=
+gopkg.in/yaml.v2 v2.4.0 h1:D8xgwECY7CYvx+Y2n4sBz93Jn9JRvxdiyyo8CTfuKaY=
+gopkg.in/yaml.v2 v2.4.0/go.mod h1:RDklbk79AGWmwhnvt/jBztapEOGDOx6ZbXqjP6csGnQ=
