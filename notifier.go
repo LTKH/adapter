@@ -2,7 +2,8 @@ package main
 
 import (
     "log"
-    "flag"
+	"flag"
+	"bytes"
     "net/http"
     "io/ioutil"
     "runtime"
@@ -10,6 +11,7 @@ import (
     "os/signal"
 	"syscall"
 	"encoding/json"
+	"text/template"
     "gopkg.in/yaml.v2"
     "gopkg.in/natefinch/lumberjack.v2"
     "github.com/ltkh/notifier/internal/snmptrap"
@@ -49,7 +51,8 @@ type SnmpTrapConfig struct {
     Addr             string             `yaml:"addr" json:"addr"`
     Community        string             `yaml:"community,omitempty" json:"community,omitempty"`
 	Retries          uint               `yaml:"retries,omitempty" json:"retries,omitempty"`
-	Options   snmptrap.HandlerConfig    `yaml:"options,omitempty" json:"options,omitempty"`
+	OptionTemplates  []string           `yaml:"option_templates,omitempty" json:"option_templates,omitempty"`
+	//Options   snmptrap.HandlerConfig    `yaml:"options,omitempty" json:"options,omitempty"`
 }
 
 func webhook(w http.ResponseWriter, r *http.Request) {
@@ -63,8 +66,8 @@ func webhook(w http.ResponseWriter, r *http.Request) {
     }
 	defer r.Body.Close()
 
-	var jsn interface{}
-	if err := json.Unmarshal(body, &jsn); err != nil {
+	var data interface{}
+	if err := json.Unmarshal(body, &data); err != nil {
 		log.Printf("[error] %v - %s", err, r.URL.Path)
 		w.WriteHeader(400)
 		return
@@ -73,23 +76,41 @@ func webhook(w http.ResponseWriter, r *http.Request) {
 	for _, receiver := range cfg.Receivers {
 		if r.URL.Path == receiver.Path {
 			for _, rcConf := range receiver.SNMPTrapConfigs {
-				go func(snmptrapConf *SnmpTrapConfig){
+				go func(rcConf *SnmpTrapConfig, data interface{}){
+
 					conf := snmptrap.Config{
-						Addr:      snmptrapConf.Addr,
-						Community: snmptrapConf.Community,
+						Addr:      rcConf.Addr,
+						Community: rcConf.Community,
 						Retries:   1,
 					}
-					snmp := snmptrap.NewService(conf)
-					opts, err := snmp.TemplateEngine(snmptrapConf.Options, jsn)
+
+                    tmpl, err := template.ParseFiles(rcConf.OptionTemplates...)
 					if err != nil {
-						log.Printf("[error] %v - %s", err, snmptrapConf.Addr)
+						log.Printf("[error] %v - %s", err, rcConf.Addr)
 						return
 					}
+
+					var buf bytes.Buffer
+					defer buf.Reset()
+					if err = tmpl.Execute(&buf, &data); err != nil {
+						log.Printf("[error] %v - %s", err, rcConf.Addr)
+						return
+					}
+
+					opts := &snmptrap.Options{}
+					if err := yaml.UnmarshalStrict([]byte(buf.String()), opts); err != nil {
+						log.Printf("[error] parsing YAML file %v", err)
+						return
+					}
+
+					snmp := snmptrap.NewService(conf)
 					snmp.Open()
-					snmp.Trap(opts.TrapOid, opts.DataList)
+					for _, opt := range opts.Options {
+						snmp.Trap(opt.TrapOid, opt.DataList)
+					}
 					snmp.Close()
-					log.Printf("[info] snmptrap sent - %s", snmptrapConf.Addr)
-				}(rcConf)
+					
+				}(rcConf, data)
 			}
 		}
 	}

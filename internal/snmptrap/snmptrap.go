@@ -1,11 +1,9 @@
 package snmptrap
 
 import (
-	"bytes"
 	"fmt"
 	"strconv"
 	"sync/atomic"
-	"text/template"
 
 	"github.com/k-sone/snmpgo"
 	"github.com/pkg/errors"
@@ -23,6 +21,10 @@ type Config struct {
 type Service struct {
 	configValue atomic.Value
 	client      *snmpgo.SNMP
+}
+
+type Options struct {
+	Options         []HandlerConfig    `yaml:"options,omitempty" json:"options,omitempty"`
 }
 
 type HandlerConfig struct {
@@ -145,34 +147,3 @@ func (s *Service) Trap(trapOid string, dataList []Data) error {
 	return nil
 }
 
-func (s *Service) TemplateEngine(c HandlerConfig, data interface{}) (HandlerConfig, error) {
-	conf := HandlerConfig{
-		TrapOid:   c.TrapOid,
-		DataList:  []Data{},
-	}
-
-	for _, d := range c.DataList {
-
-	    var buf bytes.Buffer
-		
-		tmpl, err := template.New("data").Parse(d.Value)
-		if err != nil {
-			return conf, err
-		}
-
-        if err = tmpl.Execute(&buf, &data); err != nil {
-			return conf, err
-		}
-
-		//conf.DataList[i].Value = buf.String()
-        conf.DataList = append(conf.DataList, Data{
-			Oid:    d.Oid,
-			Type:   d.Type,
-			Value:  buf.String(),
-		})
-
-        buf.Reset()
-	}
-	
-	return conf, nil
-}
