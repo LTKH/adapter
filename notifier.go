@@ -52,15 +52,6 @@ type SnmpTrapConfig struct {
 	Options   snmptrap.HandlerConfig    `yaml:"options,omitempty" json:"options,omitempty"`
 }
 
-/*
-type SnmpTrap struct {
-    Addr             string             `yaml:"addr,omitempty" json:"addr,omitempty"`
-    Community        string             `yaml:"community,omitempty" json:"community,omitempty"`
-    Retries          uint               `yaml:"retries,omitempty" json:"retries,omitempty"`
-    Options   snmptrap.HandlerConfig    `yaml:"options,omitempty" json:"options,omitempty"`
-}
-*/
-
 func webhook(w http.ResponseWriter, r *http.Request) {
   
     //reading request body
@@ -81,7 +72,7 @@ func webhook(w http.ResponseWriter, r *http.Request) {
 	
 	for _, receiver := range cfg.Receivers {
 		if r.URL.Path == receiver.Path {
-			for _, snmptrapConf := range receiver.SNMPTrapConfigs {
+			for _, rcConf := range receiver.SNMPTrapConfigs {
 				go func(snmptrapConf *SnmpTrapConfig){
 					conf := snmptrap.Config{
 						Addr:      snmptrapConf.Addr,
@@ -98,7 +89,7 @@ func webhook(w http.ResponseWriter, r *http.Request) {
 					snmp.Trap(opts.TrapOid, opts.DataList)
 					snmp.Close()
 					log.Printf("[info] snmptrap sent - %s", snmptrapConf.Addr)
-				}(snmptrapConf)
+				}(rcConf)
 			}
 		}
 	}
@@ -134,12 +125,6 @@ func main() {
     }
 
     // Loading configuration file
-    //f, err := os.Open(*cfFile)
-    //if err != nil {
-    //    log.Fatalf("[error] %v", err)
-    //}
-    //defer f.Close()
-
     content, err := ioutil.ReadFile(*cfFile)
     if err != nil {
         log.Fatalf("[error] %v", err)
@@ -150,15 +135,7 @@ func main() {
         log.Fatalf("[error] parsing YAML file %v", err)
     }
     
-    //if err := toml.NewDecoder(f).Decode(&cfg); err != nil {
-    //    log.Fatalf("[error] %v", err)
-    //}
-    
-    //enabled listen port
-    //srv = &http.Server{ Addr: ":8085", Handler: &cfg.Notifiers }
-    //if err := srv.ListenAndServe(); err != nil {
-    //    log.Fatalf("[info] opening write ports: (%s) %v", ":8085", err)
-	//}
+    // Enabled listen port
     http.HandleFunc("/", webhook)
     go http.ListenAndServe(cfg.Global.ListenAddress, nil)
 

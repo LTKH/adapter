@@ -146,23 +146,33 @@ func (s *Service) Trap(trapOid string, dataList []Data) error {
 }
 
 func (s *Service) TemplateEngine(c HandlerConfig, data interface{}) (HandlerConfig, error) {
+	conf := HandlerConfig{
+		TrapOid:   c.TrapOid,
+		DataList:  []Data{},
+	}
 
-	for i, d := range c.DataList {
+	for _, d := range c.DataList {
 
 	    var buf bytes.Buffer
 		
 		tmpl, err := template.New("data").Parse(d.Value)
 		if err != nil {
-			return c, err
+			return conf, err
 		}
 
         if err = tmpl.Execute(&buf, &data); err != nil {
-			return c, err
+			return conf, err
 		}
 
-		c.DataList[i].Value = buf.String()
+		//conf.DataList[i].Value = buf.String()
+        conf.DataList = append(conf.DataList, Data{
+			Oid:    d.Oid,
+			Type:   d.Type,
+			Value:  buf.String(),
+		})
+
         buf.Reset()
 	}
 	
-	return c, nil
+	return conf, nil
 }
