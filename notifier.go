@@ -2,16 +2,16 @@ package main
 
 import (
     "log"
-	"flag"
-	"bytes"
+    "flag"
+    "bytes"
     "net/http"
     "io/ioutil"
     "runtime"
     "os"
     "os/signal"
-	"syscall"
-	"encoding/json"
-	"text/template"
+    "syscall"
+    "encoding/json"
+    "text/template"
     "gopkg.in/yaml.v2"
     "gopkg.in/natefinch/lumberjack.v2"
     "github.com/ltkh/notifier/internal/snmptrap"
@@ -27,7 +27,7 @@ type Config struct {
 }
 
 type Global struct {
-	ListenAddress    string             `yaml:"listen_address" json:"listen_address"`
+    ListenAddress    string             `yaml:"listen_address" json:"listen_address"`
 }
 
 // Receiver configuration provides configuration on how to contact a receiver.
@@ -50,9 +50,9 @@ type Receiver struct {
 type SnmpTrapConfig struct {
     Addr             string             `yaml:"addr" json:"addr"`
     Community        string             `yaml:"community,omitempty" json:"community,omitempty"`
-	Retries          uint               `yaml:"retries,omitempty" json:"retries,omitempty"`
-	OptionTemplates  []string           `yaml:"option_templates,omitempty" json:"option_templates,omitempty"`
-	//Options   snmptrap.HandlerConfig    `yaml:"options,omitempty" json:"options,omitempty"`
+    Retries          uint               `yaml:"retries,omitempty" json:"retries,omitempty"`
+    OptionTemplates  []string           `yaml:"option_templates,omitempty" json:"option_templates,omitempty"`
+    //Options   snmptrap.HandlerConfig    `yaml:"options,omitempty" json:"options,omitempty"`
 }
 
 func webhook(w http.ResponseWriter, r *http.Request) {
@@ -60,60 +60,63 @@ func webhook(w http.ResponseWriter, r *http.Request) {
     //reading request body
     body, err := ioutil.ReadAll(r.Body)
     if err != nil {
-		log.Printf("[error] %v - %s", err, r.URL.Path)
-		w.WriteHeader(400)
+        log.Printf("[error] %v - %s", err, r.URL.Path)
+        w.WriteHeader(400)
         return
     }
-	defer r.Body.Close()
+    defer r.Body.Close()
 
-	var data interface{}
-	if err := json.Unmarshal(body, &data); err != nil {
-		log.Printf("[error] %v - %s", err, r.URL.Path)
-		w.WriteHeader(400)
-		return
-	}
-	
-	for _, receiver := range cfg.Receivers {
-		if r.URL.Path == receiver.Path {
-			for _, rcConf := range receiver.SNMPTrapConfigs {
-				go func(rcConf *SnmpTrapConfig, data interface{}){
+    var data interface{}
+    if err := json.Unmarshal(body, &data); err != nil {
+        log.Printf("[error] %v - %s", err, r.URL.Path)
+        w.WriteHeader(400)
+        return
+    }
+    
+    for _, receiver := range cfg.Receivers {
+        if r.URL.Path == receiver.Path {
+            for _, rcConf := range receiver.SNMPTrapConfigs {
+                go func(rcConf *SnmpTrapConfig, data interface{}){
 
-					conf := snmptrap.Config{
-						Addr:      rcConf.Addr,
-						Community: rcConf.Community,
-						Retries:   1,
-					}
+                    conf := snmptrap.Config{
+                        Addr:      rcConf.Addr,
+                        Community: rcConf.Community,
+                        Retries:   1,
+                    }
 
                     tmpl, err := template.ParseFiles(rcConf.OptionTemplates...)
-					if err != nil {
-						log.Printf("[error] %v - %s", err, rcConf.Addr)
-						return
-					}
+                    if err != nil {
+                        log.Printf("[error] %v - %s", err, rcConf.Addr)
+                        return
+                    }
 
-					var buf bytes.Buffer
-					defer buf.Reset()
-					if err = tmpl.Execute(&buf, &data); err != nil {
-						log.Printf("[error] %v - %s", err, rcConf.Addr)
-						return
-					}
+                    var buf bytes.Buffer
+                    defer buf.Reset()
+                    if err = tmpl.Execute(&buf, &data); err != nil {
+                        log.Printf("[error] %v - %s", err, rcConf.Addr)
+                        return
+                    }
 
-					opts := &snmptrap.Options{}
-					if err := yaml.UnmarshalStrict([]byte(buf.String()), opts); err != nil {
-						log.Printf("[error] parsing YAML file %v", err)
-						return
-					}
+                    opts := &[]snmptrap.Options{}
+                    if err := yaml.UnmarshalStrict([]byte(buf.String()), opts); err != nil {
+                        log.Printf("[error] parsing YAML file %v", err)
+                        return
+                    }
 
-					snmp := snmptrap.NewService(conf)
-					snmp.Open()
-					for _, opt := range opts.Options {
-						snmp.Trap(opt.TrapOid, opt.DataList)
-					}
-					snmp.Close()
-					
-				}(rcConf, data)
-			}
-		}
-	}
+                    if len(*opts) > 0 {
+                        snmp := snmptrap.NewService(conf)
+                        snmp.Open()
+                        for _, opt := range *opts {
+                            log.Printf("[info] %v", opt.DataList)
+                            snmp.Trap(opt.TrapOid, opt.DataList)
+                        }
+                        snmp.Close()
+                    }
+                    
+                }(rcConf, data)
+            }
+        }
+    }
 
     w.WriteHeader(204)
     return
@@ -150,8 +153,8 @@ func main() {
     if err != nil {
         log.Fatalf("[error] %v", err)
     }
-	
-	cfg = &Config{}
+    
+    cfg = &Config{}
     if err := yaml.UnmarshalStrict(content, cfg); err != nil {
         log.Fatalf("[error] parsing YAML file %v", err)
     }
