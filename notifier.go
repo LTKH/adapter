@@ -107,7 +107,7 @@ func webhook(w http.ResponseWriter, r *http.Request) {
                         snmp := snmptrap.NewService(conf)
                         snmp.Open()
                         for _, opt := range *opts {
-                            log.Printf("[info] %v", opt.DataList)
+                            //log.Printf("[info] %v", opt.DataList)
                             snmp.Trap(opt.TrapOid, opt.DataList)
                         }
                         snmp.Close()
