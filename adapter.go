@@ -163,7 +163,7 @@ func main() {
     http.HandleFunc("/", webhook)
     go http.ListenAndServe(cfg.Global.ListenAddress, nil)
 
-    log.Print("[info] notifier started -_-")
+    log.Print("[info] adapter started -_-")
     
     //program completion signal processing
     c := make(chan os.Signal, 2)
@@ -172,7 +172,7 @@ func main() {
     // Daemon mode
     for {
         <- c
-        log.Print("[info] notifier stopped")
+        log.Print("[info] adapter stopped")
         os.Exit(0)
     }
 
