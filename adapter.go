@@ -86,20 +86,20 @@ func webhook(w http.ResponseWriter, r *http.Request) {
 
                     tmpl, err := template.ParseFiles(rcConf.OptionTemplates...)
                     if err != nil {
-                        log.Printf("[error] %v - %s", err, rcConf.Addr)
+                        log.Printf("[error] %v - %v", err, rcConf.OptionTemplates)
                         return
                     }
 
                     var buf bytes.Buffer
                     defer buf.Reset()
                     if err = tmpl.Execute(&buf, &data); err != nil {
-                        log.Printf("[error] %v - %s", err, rcConf.Addr)
+                        log.Printf("[error] %v - %v", err, rcConf.OptionTemplates)
                         return
                     }
 
                     opts := &[]snmptrap.Options{}
                     if err := yaml.UnmarshalStrict([]byte(buf.String()), opts); err != nil {
-                        log.Printf("[error] %v - %s", err, rcConf.Addr)
+                        log.Printf("[error] %v - %s", err, rcConf.OptionTemplates)
                         return
                     }
 
