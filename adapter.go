@@ -99,7 +99,7 @@ func webhook(w http.ResponseWriter, r *http.Request) {
 
                     opts := &[]snmptrap.Options{}
                     if err := yaml.UnmarshalStrict([]byte(buf.String()), opts); err != nil {
-                        log.Printf("[error] parsing YAML file %v", err)
+                        log.Printf("[error] parsing YAML file %v - %s", err, rcConf.Addr)
                         return
                     }
 
