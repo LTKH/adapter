@@ -9,3 +9,7 @@ receivers:
       community: 'public'
       option_templates: 
         - 'config/option.tmpl'
+  webhook_configs:
+    - url: 'http://localhost:8080'
+      option_templates: 
+        - 'config/json.tmpl'

@@ -14,7 +14,8 @@ import (
     "text/template"
     "gopkg.in/yaml.v2"
     "gopkg.in/natefinch/lumberjack.v2"
-    "github.com/ltkh/notifier/internal/snmptrap"
+    "github.com/ltkh/adapter/internal/snmptrap"
+    "github.com/ltkh/adapter/internal/webhook"
 )
 
 var (
@@ -34,19 +35,17 @@ type Global struct {
 type Receiver struct {
     // A unique identifier for this receiver.
     Path             string             `yaml:"path" json:"path"`
-
+    SNMPTrapConfigs  []*SnmpTrapConfig  `yaml:"snmptrap_configs,omitempty" json:"snmptrap_configs,omitempty"`
+    WebhookConfigs   []*WebhookConfig   `yaml:"webhook_configs,omitempty" json:"webhook_configs,omitempty"`
     //EmailConfigs     []*EmailConfig     `yaml:"email_configs,omitempty" json:"email_configs,omitempty"`
     //PagerdutyConfigs []*PagerdutyConfig `yaml:"pagerduty_configs,omitempty" json:"pagerduty_configs,omitempty"`
     //SlackConfigs     []*SlackConfig     `yaml:"slack_configs,omitempty" json:"slack_configs,omitempty"`
-    //WebhookConfigs   []*WebhookConfig   `yaml:"webhook_configs,omitempty" json:"webhook_configs,omitempty"`
     //OpsGenieConfigs  []*OpsGenieConfig  `yaml:"opsgenie_configs,omitempty" json:"opsgenie_configs,omitempty"`
     //WechatConfigs    []*WechatConfig    `yaml:"wechat_configs,omitempty" json:"wechat_configs,omitempty"`
     //PushoverConfigs  []*PushoverConfig  `yaml:"pushover_configs,omitempty" json:"pushover_configs,omitempty"`
     //VictorOpsConfigs []*VictorOpsConfig `yaml:"victorops_configs,omitempty" json:"victorops_configs,omitempty"`
-    SNMPTrapConfigs  []*SnmpTrapConfig  `yaml:"snmptrap_configs,omitempty" json:"snmptrap_configs,omitempty"`
 }
 
-// EmailConfig configures notifications via mail.
 type SnmpTrapConfig struct {
     Addr             string             `yaml:"addr" json:"addr"`
     Community        string             `yaml:"community,omitempty" json:"community,omitempty"`
@@ -55,7 +54,14 @@ type SnmpTrapConfig struct {
     //Options   snmptrap.HandlerConfig    `yaml:"options,omitempty" json:"options,omitempty"`
 }
 
-func webhook(w http.ResponseWriter, r *http.Request) {
+type WebhookConfig struct {
+    URL              string             `yaml:"url" json:"url"`
+    Method           string             `yaml:"method" json:"method"`
+    OptionTemplates  []string           `yaml:"option_templates,omitempty" json:"option_templates,omitempty"`
+    //Options   snmptrap.HandlerConfig    `yaml:"options,omitempty" json:"options,omitempty"`
+}
+
+func server(w http.ResponseWriter, r *http.Request) {
   
     //reading request body
     body, err := ioutil.ReadAll(r.Body)
@@ -75,6 +81,31 @@ func webhook(w http.ResponseWriter, r *http.Request) {
     
     for _, receiver := range cfg.Receivers {
         if r.URL.Path == receiver.Path {
+            for _, rcConf := range receiver.WebhookConfigs {
+                go func(rcConf *WebhookConfig, data interface{}){
+
+                    tmpl, err := template.ParseFiles(rcConf.OptionTemplates...)
+                    if err != nil {
+                        log.Printf("[error] %v - %v", err, rcConf.OptionTemplates)
+                        return
+                    }
+
+                    var buf bytes.Buffer
+                    defer buf.Reset()
+                    if err = tmpl.Execute(&buf, &data); err != nil {
+                        log.Printf("[error] %v - %v", err, rcConf.OptionTemplates)
+                        return
+                    }
+
+                    client := webhook.NewClient(&webhook.HTTPClient{})
+                    _, err = client.HttpRequest(rcConf.URL, buf.Bytes())
+                    if err != nil {
+                        log.Printf("[error] %v - %v", err, rcConf.OptionTemplates)
+                        return
+                    }
+                    
+                }(rcConf, data)
+            }
             for _, rcConf := range receiver.SNMPTrapConfigs {
                 go func(rcConf *SnmpTrapConfig, data interface{}){
 
@@ -107,7 +138,6 @@ func webhook(w http.ResponseWriter, r *http.Request) {
                         snmp := snmptrap.NewService(conf)
                         snmp.Open()
                         for _, opt := range *opts {
-                            //log.Printf("[info] %v", opt.DataList)
                             snmp.Trap(opt.TrapOid, opt.DataList)
                         }
                         snmp.Close()
@@ -160,7 +190,7 @@ func main() {
     }
     
     // Enabled listen port
-    http.HandleFunc("/", webhook)
+    http.HandleFunc("/", server)
     go http.ListenAndServe(cfg.Global.ListenAddress, nil)
 
     log.Print("[info] adapter started -_-")

@@ -1,4 +1,4 @@
-module github.com/ltkh/notifier
+module github.com/ltkh/adapter
 
 go 1.14
 
